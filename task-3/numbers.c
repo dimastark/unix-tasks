@@ -79,7 +79,7 @@ void read_numbers_from_file(const char* path) {
     }
 }
 
-int main (int argc, char **argv) {
+int main(int argc, char **argv) {
     if (argc < 3) {
         perror("Wrong count of arguments");
         return 1;
