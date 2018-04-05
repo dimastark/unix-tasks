@@ -1,24 +1,28 @@
-#include <ctype.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
-#define BUFFER_SIZE 1024
+void malloc_error_exit() {
+    printf("Unable to allocate memory.\n");
+    exit(EXIT_FAILURE);
+}
 
 typedef struct node {
     char* val;
     struct node* next;
 } node_t;
 
-node_t* root = NULL;
-
 void init(node_t** node, char* val) {
     (*node) = malloc(sizeof(node_t));
+
+    if (*node == NULL)
+        malloc_error_exit();
+
     (*node)->val = val;
     (*node)->next = NULL;
 }
+
+node_t* root = NULL;
 
 void push(char* val) {
     if (root == NULL) {
@@ -48,6 +52,9 @@ long size() {
 char* concat(const char* s1, const char* s2) {
     char* result = malloc(strlen(s1) + strlen(s2) + 1);
 
+    if (result == NULL)
+        malloc_error_exit();
+
     strcpy(result, s1);
     strcat(result, s2);
 
@@ -55,19 +62,25 @@ char* concat(const char* s1, const char* s2) {
 }
 
 char* substring(char* string, int position, int length) {
-    char* pointer = malloc(length + 1);
-   
-    for (int c = 0; c < position - 1 ; c++)
-        string++; 
- 
-    for (int c = 0; c < length; c++) {
-        *(pointer + c) = *string;      
-        string++;
-    }
- 
-    *(pointer + length) = '\0';
- 
-    return pointer;
+    char* substring = (char*) malloc(sizeof(char) * (length + 1));
+
+    if (substring == NULL)
+        malloc_error_exit();
+
+    strncpy(substring, string + position, length);
+    substring[length] = '\0';
+
+    return substring;
+}
+
+int compare_string(char* a, char* b) {
+    if (strlen(a) < strlen(b))
+        return -1;
+    
+    if (strlen(a) > strlen(b))
+        return 1;
+
+    return strcmp(a, b);
 }
 
 int cmp_str_as_number(const void* a, const void* b) {
@@ -75,9 +88,15 @@ int cmp_str_as_number(const void* a, const void* b) {
     char* bc = *(char**)b;
 
     if (ac[0] == bc[0] && ac[0] == '-')
-        return -strcmp(ac, bc);
+        return -compare_string(ac, bc);
     
-    return strcmp(ac, bc);
+    if (ac[0] == '-')
+        return -1;
+    
+    if (bc[0] == '-')
+        return 1;
+
+    return compare_string(ac, bc);
 }
 
 char* read_all(FILE* file) {
@@ -120,24 +139,22 @@ void read_numbers_from_file(const char* path) {
         return;
     }
 
-    long length = strlen(content);
-
-    char buffer[BUFFER_SIZE];
+    int length = strlen(content);
 
     for (int i = 0; i < length; i++) {
         if (!isdigit(content[i]) && content[i] != '-')
             continue;
         
-        while (content[i] == '-')
+        while (i < length - 1 && content[i + 1] == '-')
             i++;
-        
-        int substring_len = 0;
 
-        while (isdigit(content[i + substring_len]))
+        int substring_len = content[i] == '-' ? 1 : 0;
+
+        while (i + substring_len < length && isdigit(content[i + substring_len]))
             substring_len++;
-        
-        printf("'%c' %d\n", content[i], substring_len);
+
         push(substring(content, i, substring_len));
+        i += substring_len - 1;
     }
 }
 
@@ -170,7 +187,6 @@ int main(int argc, char **argv) {
         return 1;
     }
     
-    printf("%ld\n", count);
     for (int i = 0; i < count; i++)
         write(fdo, concat(strs[i], " "), strlen(strs[i]) + 1);
 
