@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
     char* strs[count];
     long index = 0;
 
-    node_t * current = root;
+    node_t* current = root;
 
     while (current != NULL) {
         strs[index++] = current->val;
